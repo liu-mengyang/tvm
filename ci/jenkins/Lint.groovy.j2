@@ -1,18 +1,65 @@
 def lint() {
   stage('Lint') {
     parallel(
-      {% call m.sharded_lint_step(
-          name='Lint',
-          num_shards=2,
-          node='CPU-SMALL',
-          ws='tvm/lint',
-          docker_image='ci_lint',
-        )
-      %}
+      {% call m.lint_step(name='other lints') %}
         sh (
-          script: "${docker_run} ${ci_lint} ./tests/scripts/task_lint.sh",
+          script: "${docker_run} ${ci_lint} ./tests/scripts/task_short_lints.sh",
           label: 'Run lint',
         )
+      {% endcall %}
+      {% call m.lint_step('black') %}
+      sh (
+        script: "${docker_run} ${ci_lint} tests/lint/git-black.sh",
+        label: 'black check',
+      )
+      {% endcall %}
+      {% call m.lint_step('flake8') %}
+      sh (
+        script: "${docker_run} ${ci_lint} tests/lint/flake8.sh",
+        label: 'Linting the Python code with flake8',
+      )
+      {% endcall %}
+      {% call m.lint_step('mypy') %}
+      sh (
+        script: "${docker_run} ${ci_lint} tests/scripts/task_mypy.sh",
+        label: 'Type checking with MyPy ',
+      )
+      {% endcall %}
+      {% call m.lint_step('jni') %}
+      sh (
+        script: "${docker_run} ${ci_lint} tests/lint/jnilint.sh",
+        label: 'Linting the JNI code',
+      )
+      {% endcall %}
+      {% call m.lint_step('pylint') %}
+      sh (
+        script: "${docker_run} ${ci_lint} tests/lint/pylint.sh",
+        label: 'Linting the Python code with pylint',
+      )
+      {% endcall %}
+      {% call m.lint_step('cppdocs') %}
+      sh (
+        script: "${docker_run} ${ci_lint} tests/lint/cppdocs.sh",
+        label: 'Checking C++ documentation',
+      )
+      {% endcall %}
+      {% call m.lint_step('asf headers') %}
+      sh (
+        script: "${docker_run} ${ci_lint} tests/lint/check_asf_header.sh --local",
+        label: 'Checking ASF license headers',
+      )
+      {% endcall %}
+      {% call m.lint_step('cpplint') %}
+      sh (
+        script: "${docker_run} ${ci_lint} tests/lint/cpplint.sh",
+        label: 'Linting the C++ code',
+      )
+      {% endcall %}
+      {% call m.lint_step('clang-format') %}
+      sh (
+        script: "${docker_run} ${ci_lint} tests/lint/git-clang-format.sh",
+        label: 'clang-format check',
+      )
       {% endcall %}
     )
   }

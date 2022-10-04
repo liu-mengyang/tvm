@@ -45,7 +45,7 @@
 // 'python3 jenkins/generate.py'
 // Note: This timestamp is here to ensure that updates to the Jenkinsfile are
 // always rebased on main before merging:
-// Generated at 2022-09-26T10:48:49.577077
+// Generated at 2022-10-04T00:35:46.803728
 
 import org.jenkinsci.plugins.pipeline.modeldefinition.Utils
 // NOTE: these lines are scanned by docker/dev_common.sh. Please update the regex as needed. -->
@@ -610,19 +610,17 @@ def build_docker_images() {
 def lint() {
   stage('Lint') {
     parallel(
-  'Lint 1 of 2': {
-    node('CPU-SMALL') {
+  'other lints': {
+    node('CPU') {
       ws("workspace/exec_${env.EXECUTOR_NUMBER}/tvm/lint") {
         init_git()
         docker_init(ci_lint)
         timeout(time: max_time, unit: 'MINUTES') {
           withEnv([
-            'TVM_NUM_SHARDS=2',
-            'TEST_STEP_NAME=Lint',
-            'TVM_SHARD_INDEX=0',
+            'TEST_STEP_NAME=other lints',
             "SKIP_SLOW_TESTS=${skip_slow_tests}"], {
             sh (
-                script: "${docker_run} ${ci_lint} ./tests/scripts/task_lint.sh",
+                script: "${docker_run} ${ci_lint} ./tests/scripts/task_short_lints.sh",
                 label: 'Run lint',
               )
           })
@@ -630,21 +628,163 @@ def lint() {
       }
     }
   },
-  'Lint 2 of 2': {
-    node('CPU-SMALL') {
+  'black': {
+    node('CPU') {
       ws("workspace/exec_${env.EXECUTOR_NUMBER}/tvm/lint") {
         init_git()
         docker_init(ci_lint)
         timeout(time: max_time, unit: 'MINUTES') {
           withEnv([
-            'TVM_NUM_SHARDS=2',
-            'TEST_STEP_NAME=Lint',
-            'TVM_SHARD_INDEX=1',
+            'TEST_STEP_NAME=black',
             "SKIP_SLOW_TESTS=${skip_slow_tests}"], {
             sh (
-                script: "${docker_run} ${ci_lint} ./tests/scripts/task_lint.sh",
-                label: 'Run lint',
-              )
+              script: "${docker_run} ${ci_lint} tests/lint/git-black.sh",
+              label: 'black check',
+            )
+          })
+        }
+      }
+    }
+  },
+  'flake8': {
+    node('CPU') {
+      ws("workspace/exec_${env.EXECUTOR_NUMBER}/tvm/lint") {
+        init_git()
+        docker_init(ci_lint)
+        timeout(time: max_time, unit: 'MINUTES') {
+          withEnv([
+            'TEST_STEP_NAME=flake8',
+            "SKIP_SLOW_TESTS=${skip_slow_tests}"], {
+            sh (
+              script: "${docker_run} ${ci_lint} tests/lint/flake8.sh",
+              label: 'Linting the Python code with flake8',
+            )
+          })
+        }
+      }
+    }
+  },
+  'mypy': {
+    node('CPU') {
+      ws("workspace/exec_${env.EXECUTOR_NUMBER}/tvm/lint") {
+        init_git()
+        docker_init(ci_lint)
+        timeout(time: max_time, unit: 'MINUTES') {
+          withEnv([
+            'TEST_STEP_NAME=mypy',
+            "SKIP_SLOW_TESTS=${skip_slow_tests}"], {
+            sh (
+              script: "${docker_run} ${ci_lint} tests/scripts/task_mypy.sh",
+              label: 'Type checking with MyPy ',
+            )
+          })
+        }
+      }
+    }
+  },
+  'jni': {
+    node('CPU') {
+      ws("workspace/exec_${env.EXECUTOR_NUMBER}/tvm/lint") {
+        init_git()
+        docker_init(ci_lint)
+        timeout(time: max_time, unit: 'MINUTES') {
+          withEnv([
+            'TEST_STEP_NAME=jni',
+            "SKIP_SLOW_TESTS=${skip_slow_tests}"], {
+            sh (
+              script: "${docker_run} ${ci_lint} tests/lint/jnilint.sh",
+              label: 'Linting the JNI code',
+            )
+          })
+        }
+      }
+    }
+  },
+  'pylint': {
+    node('CPU') {
+      ws("workspace/exec_${env.EXECUTOR_NUMBER}/tvm/lint") {
+        init_git()
+        docker_init(ci_lint)
+        timeout(time: max_time, unit: 'MINUTES') {
+          withEnv([
+            'TEST_STEP_NAME=pylint',
+            "SKIP_SLOW_TESTS=${skip_slow_tests}"], {
+            sh (
+              script: "${docker_run} ${ci_lint} tests/lint/pylint.sh",
+              label: 'Linting the Python code with pylint',
+            )
+          })
+        }
+      }
+    }
+  },
+  'cppdocs': {
+    node('CPU') {
+      ws("workspace/exec_${env.EXECUTOR_NUMBER}/tvm/lint") {
+        init_git()
+        docker_init(ci_lint)
+        timeout(time: max_time, unit: 'MINUTES') {
+          withEnv([
+            'TEST_STEP_NAME=cppdocs',
+            "SKIP_SLOW_TESTS=${skip_slow_tests}"], {
+            sh (
+              script: "${docker_run} ${ci_lint} tests/lint/cppdocs.sh",
+              label: 'Checking C++ documentation',
+            )
+          })
+        }
+      }
+    }
+  },
+  'asf headers': {
+    node('CPU') {
+      ws("workspace/exec_${env.EXECUTOR_NUMBER}/tvm/lint") {
+        init_git()
+        docker_init(ci_lint)
+        timeout(time: max_time, unit: 'MINUTES') {
+          withEnv([
+            'TEST_STEP_NAME=asf headers',
+            "SKIP_SLOW_TESTS=${skip_slow_tests}"], {
+            sh (
+              script: "${docker_run} ${ci_lint} tests/lint/check_asf_header.sh --local",
+              label: 'Checking ASF license headers',
+            )
+          })
+        }
+      }
+    }
+  },
+  'cpplint': {
+    node('CPU') {
+      ws("workspace/exec_${env.EXECUTOR_NUMBER}/tvm/lint") {
+        init_git()
+        docker_init(ci_lint)
+        timeout(time: max_time, unit: 'MINUTES') {
+          withEnv([
+            'TEST_STEP_NAME=cpplint',
+            "SKIP_SLOW_TESTS=${skip_slow_tests}"], {
+            sh (
+              script: "${docker_run} ${ci_lint} tests/lint/cpplint.sh",
+              label: 'Linting the C++ code',
+            )
+          })
+        }
+      }
+    }
+  },
+  'clang-format': {
+    node('CPU') {
+      ws("workspace/exec_${env.EXECUTOR_NUMBER}/tvm/lint") {
+        init_git()
+        docker_init(ci_lint)
+        timeout(time: max_time, unit: 'MINUTES') {
+          withEnv([
+            'TEST_STEP_NAME=clang-format',
+            "SKIP_SLOW_TESTS=${skip_slow_tests}"], {
+            sh (
+              script: "${docker_run} ${ci_lint} tests/lint/git-clang-format.sh",
+              label: 'clang-format check',
+            )
           })
         }
       }
